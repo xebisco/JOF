@@ -4,7 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class JOFUtils {
@@ -16,6 +19,36 @@ public class JOFUtils {
 		controlCharsMap.put("reading quote", '\7');
 		controlCharsMap.put("string space", '\5');
 		controlCharsMap.put("line split", '\1');
+	}
+
+	public static <T extends Object> ArrayList<T> toArrayList(String prop, Class<T> type) {
+		ArrayList<T> list = new ArrayList<>();
+		if (prop.hashCode() != "".hashCode()) {
+			if (!prop.startsWith("'") || !prop.endsWith("'")) {
+				throw new JOFException("\"'\" expected.");
+			}
+			prop = prop.replace("\\'", JOFUtils.controlCharsMap.get("reading quote").toString());
+			prop = prop.replace("''", JOFUtils.controlCharsMap.get("quote").toString())
+					.replace(JOFUtils.controlCharsMap.get("reading quote"), '\'');
+			prop = prop.substring(1, prop.length() - 1);
+			String[] objs = prop.split(JOFUtils.controlCharsMap.get("quote").toString());
+			for (String o : objs) {
+				if (o.hashCode() != "".hashCode())
+
+					try {
+						list.add(type.cast(o));
+					} catch (Exception e) {
+						try {
+							list.add(type.cast(type.getDeclaredMethod("valueOf", String.class).invoke(null, o)));
+						} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
+								| NoSuchMethodException | SecurityException e1) {
+							e1.printStackTrace();
+						}
+					}
+
+			}
+		}
+		return list;
 	}
 
 	public static class JOFReader {
@@ -66,7 +99,7 @@ public class JOFUtils {
 					}
 					if (lineOut.toString().hashCode() != "".hashCode()) {
 						builder.append(lineOut.toString());
-						if(!inQuotes)
+						if (!inQuotes)
 							builder.append(controlCharsMap.get("line split"));
 					}
 				}
