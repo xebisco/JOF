@@ -1,0 +1,4 @@
+using java.lang, com.xebisco.jof
+name = "Xebisco": String
+age = "15": Integer
+height = "1.8": Float
